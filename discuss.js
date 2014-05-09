@@ -125,15 +125,15 @@
                 responseBody = JSON.parse(responseBody);
             }
             catch {
-                callback(null, new Error('Unable to parse response body'), null, responseHeaders);
+                callback(new Error('Unable to parse response body'), null, status, responseHeaders);
             }
         }
 
         if (status < 100 || status >= 300) {
-            callback(status, responseBody, null, responseHeaders);
+            callback(responseBody, null, status, responseHeaders);
         }
         else {
-            callback(status, null, responseBody, responseHeaders);
+            callback(null, responseBody, status, responseHeaders);
         }
     };
 
