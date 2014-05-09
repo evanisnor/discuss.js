@@ -15,7 +15,8 @@
             },
             'head': {
                 query: true
-            } };
+            } 
+        };
 
         this.path = path;
         this._initHeaders(headers);
@@ -29,9 +30,11 @@
 
     Discuss.prototype._initOptions = function (options) {
         this.options = {
-            autoParse: true,
+            charset: 'utf-8', // Used for encoding when the body to send is a string
+            autoParse: true,  // Automatic parsing of response object to JSON if the content type is application/json
             timeout: 30000,
-            cors: false
+            cors: false,
+            corsWithCredentials: false
         };
         for (var o in options) {
             if (options.hasOwnProperty(o) && this.options.hasOwnProperty(o)) {
@@ -62,16 +65,23 @@
 
         var method = this.methods[arguments[0]];
 
-        if ((method.body || method.query)
-            && arguments.length === 2 {
-            arguments.splice(1, 0, null, null);
+        if (arguments.length > 2 && typeof arguments[1] === 'function') {
+            arguments.splice(1, 0, undefined, undefined);
         }
-        else if (!method.body && !method.query
-            && arguments.length === 2) {
-            arguments.splice(1, 0, null, null);
+        else if (method.query && arguments.length > 3 && typeof arguments[2] === 'function') {
+            arguments.splice(2, 0, undefined);
+        }
+        else if (method.body && arguments.length > 3 && typeof arguments[2] === 'function') {
+            arguments.splice(1, 0, undefined);
         }
 
-        Discuss.prototype.send.apply(this, arguments);
+        if (arguments.length == 4
+            || arguments.length == 5 && typeof arguments[arguments.length - 1] == 'object') {
+            Discuss.prototype.send.apply(this, arguments);
+        }
+        else {
+            throw 'Invalid parameters';
+        }
     };
 
     Discuss.prototype.send = function (method, query, body, callback, headers) {
@@ -84,7 +94,7 @@
         var xhr = this._buildXHR();
         xhr.open(method, this.path, true);
 
-        var compiledHeaders = this._buildHeaders(headers);
+        var compiledHeaders = this._buildHeaders(headers, typeof body);
         for (var p in compiledHeaders) {
             if (compiledHeaders.hasOwnProperty(p)) {
                 xhr.setRequestHeader(p, compiledHeaders[p]);
@@ -103,9 +113,7 @@
             }
         };
 
-        if (body) {
-            xhr.send(body);
-        }
+        xhr.send(body);
     };
 
     Discuss.prototype._handleResponse = function (status, responseText, responseHeaderText, callback) {
@@ -118,11 +126,13 @@
                 responseHeaders = new Error('Unable to parse response headers');
             }
 
-            try {
-                responseBody = JSON.parse(responseBody);
-            }
-            catch {
-                callback(new Error('Unable to parse response body'), null, status, responseHeaders);
+            if ('Content-Type' in responseHeaders && responseHeaders['Content-Type'].indexOf('application/json') > -1) {
+                try {
+                    responseBody = JSON.parse(responseBody);
+                }
+                catch {
+                    callback(new Error('Unable to parse response body'), null, status, responseHeaders);
+                }
             }
         }
 
@@ -151,6 +161,9 @@
         if (this.options.cors && !('withCredentials' in xhr)) {
             throw 'CORS is not supported by this user agent';
         }
+        else if (this.options.cors && this.options.corsWithCredentials && 'withCredentials' in xhr) {
+            xhr.withCredentials = 'true';
+        }
         return xhr;
     };
 
@@ -169,13 +182,20 @@
         return '?' + queryString;
     };
 
-    Discuss.prototype._buildHeaders = function (headers) {
+    Discuss.prototype._buildHeaders = function (headers, bodyType) {
         var compiledHeaders = {};
         for (var p in this.headers) {
             if (this.headers.hasOwnProperty(p)) {
                 compiledHeaders[p] = this.headers[p];
             }
         }
+        if (bodyType === 'object') {
+            compiledHeaders['Content-Type'] = 'application/json';
+        }
+        else if (bodyType === 'string') {
+            compiledHeaders['Content-Type'] = 'text/plain; charset=' + this.options.charset;
+        }
+
         for (var p in headers) {
             if (headers.hasOwnProperty(p)) {
                 compiledHeaders[p] = headers[p];
