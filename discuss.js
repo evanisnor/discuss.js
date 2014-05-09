@@ -129,7 +129,7 @@
             }
         }
 
-        if (xhr.status < 100 || xhr.status >= 300) {
+        if (status < 100 || status >= 300) {
             callback(status, responseBody, null, responseHeaders);
         }
         else {
