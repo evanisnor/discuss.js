@@ -1,8 +1,8 @@
 (function (scope) {
-    
+
     var _arrayContains = function (array, val) {
         for (var i = 0; i < array.length; i++) {
-            if (array[i] === val) {
+            if (array[i] == val) {
                 return true;
             }
         }
