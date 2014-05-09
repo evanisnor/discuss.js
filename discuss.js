@@ -1,16 +1,22 @@
 (function (scope) {
 
-    var _arrayContains = function (array, val) {
-        for (var i = 0; i < array.length; i++) {
-            if (array[i] == val) {
-                return true;
-            }
-        }
-        return false;
-    };
-
     var Discuss = function (path, headers, options) {
-        this.methods = [ 'get', 'post', 'put', 'delete', 'head' ];
+        this.methods = {
+            'get': {
+                query: true
+            },
+            'post': {
+                body: true
+            },
+            'put': {
+                body: true
+            },
+            'delete': {
+            },
+            'head': {
+                query: true
+            } };
+
         this.path = path;
         this._initHeaders(headers);
         this._initOptions(options);
@@ -36,52 +42,39 @@
 
     Discuss.prototype._initMethods = function () {
         var self = this;
-        for (var i in this.methods) {
+        for (var m in this.methods) {
             (function(method) {
-                Discuss.prototype['method'] = function () {
+                Discuss.prototype[method] = function () {
                     arguments.unshift(method);
                     Discuss.prototype.request(self, arguments);
                 };
-            }(this.methods[i]));
+            }(this.methods[m]));
         }
     };
 
     /*
-     *  Discuss.request(method, [[[[headers], ] query, ] body], callback);
+     *  Discuss.request(method [, query | body], callback [, headers]);
      */
     Discuss.prototype.request = function () {
-        if (typeof arguments[0] !== 'string' || !_arrayContains(this.methods, arguments[0])) {
+        if (typeof arguments[0] !== 'string' || !(arguments[0] in this.methods)) {
             throw 'Invalid method type';
         }
 
-        if (typeof arguments[1] === 'function') {
-            arguments[4] = arguments[1];
-            arguments[3] = null;
-            arguments[2] = null;
-            arguments[1] = null;
+        var method = this.methods[arguments[0]];
+
+        if ((method.body || method.query)
+            && arguments.length === 2 {
+            arguments.splice(1, 0, null, null);
         }
-        else if ((typeof arguments[1] === 'Object' || typeof arguments[1] === 'string')
-            && typeof arguments[2] === 'function') {
-            
-            arguments[4] = arguments[2];
-            arguments[3] = arguments[1];
-            arguments[2] = null;
-            arguments[1] = null;
-        }
-        else if ((typeof arguments[1] === 'Object' || typeof arguments[1] === 'string')
-            && (typeof arguments[2] === 'Object' || typeof arguments[2] === 'string')
-            && typeof arguments[3] === 'function') {
-            
-            arguments[4] = arguments[3];
-            arguments[3] = arguments[2];
-            arguments[2] = arguments[1];
-            arguments[1] = null;
+        else if (!method.body && !method.query
+            && arguments.length === 2) {
+            arguments.splice(1, 0, null, null);
         }
 
         Discuss.prototype.send.apply(this, arguments);
     };
 
-    Discuss.prototype.send = function (method, headers, query, body, callback) {
+    Discuss.prototype.send = function (method, query, body, callback, headers) {
         var url = this.path;
 
         if (query && Object.keys(query).length > 0) {
@@ -109,6 +102,10 @@
                 this._handleResponse(xhr.status, xhr.responseText, xhr.getAllResponseHeaders(), callback);
             }
         };
+
+        if (body) {
+            xhr.send(body);
+        }
     };
 
     Discuss.prototype._handleResponse = function (status, responseText, responseHeaderText, callback) {
