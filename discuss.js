@@ -1,5 +1,5 @@
 (function (scope) {
-
+    
     var _arrayContains = function (array, val) {
         for (var i = 0; i < array.length; i++) {
             if (array[i] === val) {
@@ -84,10 +84,12 @@
     Discuss.prototype.send = function (method, headers, query, body, callback) {
         var url = this.path;
 
-
         if (query && Object.keys(query).length > 0) {
             url = url + this._buildQueryString(query);
         }
+
+        var xhr = this._buildXHR();
+        xhr.open(method, this.path, true);
 
         var compiledHeaders = this._buildHeaders(headers);
         for (var p in compiledHeaders) {
@@ -95,9 +97,6 @@
                 xhr.setRequestHeader(p, compiledHeaders[p]);
             }
         }
-
-        var xhr = this._buildXHR();
-        xhr.open(method, this.path, true);
 
         var timer = setTimer(function() {
             xhr.abort();
