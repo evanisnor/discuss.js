@@ -1,0 +1,35 @@
+{
+  "name": "discuss.js",
+  "version": "0.1.0",
+  "description": "A lightweight JavaScript REST abstraction for the browser",
+  "scripts": {
+    "test": "grunt api & grunt test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/leadhead9/discuss.js.git"
+  },
+  "keywords": [
+    "rest",
+    "browser",
+    "ajax",
+    "xhr"
+  ],
+  "author": "Evan W. Isnor",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/leadhead9/discuss.js/issues"
+  },
+  "homepage": "https://github.com/leadhead9/discuss.js",
+  "devDependencies": {
+    "grunt": "~0.4.4",
+    "mocha": "~1.18.2",
+    "chai": "~1.9.1",
+    "grunt-mocha": "~0.4.10",
+    "grunt-contrib-jshint": "~0.10.0",
+    "grunt-execute": "~0.2.1",
+    "grunt-contrib-watch": "~0.6.1",
+    "express": "~4.1.2",
+    "body-parser": "~1.0.2"
+  }
+}

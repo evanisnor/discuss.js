@@ -1,6 +1,6 @@
 (function (scope) {
 
-    var Discuss = function (path, headers, options) {
+    var Discuss = function (path, options, headers) {
         this.methods = {
             'get': {
                 query: true
@@ -19,8 +19,8 @@
         };
 
         this.path = path;
-        this._initHeaders(headers);
         this._initOptions(options);
+        this._initHeaders(headers);
         this._initMethods();
     };
 
@@ -46,12 +46,13 @@
     Discuss.prototype._initMethods = function () {
         var self = this;
         for (var m in this.methods) {
-            (function(method) {
+            (function (method) {
                 Discuss.prototype[method] = function () {
-                    arguments.unshift(method);
-                    Discuss.prototype.request(self, arguments);
+                    var args = Array.prototype.slice.call(arguments);
+                    args.unshift(method);
+                    Discuss.prototype.request.apply(self, args);
                 };
-            }(this.methods[m]));
+            }(m));
         }
     };
 
@@ -59,25 +60,25 @@
      *  Discuss.request(method [, query | body], callback [, headers]);
      */
     Discuss.prototype.request = function () {
-        if (typeof arguments[0] !== 'string' || !(arguments[0] in this.methods)) {
-            throw 'Invalid method type';
+        var args = Array.prototype.slice.call(arguments);
+        if (typeof args[0] !== 'string' || !(args[0] in this.methods)) {
+            throw 'Invalid method type: ' + (typeof args[0]);
         }
 
-        var method = this.methods[arguments[0]];
+        var method = this.methods[args[0]];
 
-        if (arguments.length > 2 && typeof arguments[1] === 'function') {
-            arguments.splice(1, 0, undefined, undefined);
+        if (args.length >= 2 && typeof args[1] === 'function') {
+            args.splice(1, 0, undefined, undefined);
         }
-        else if (method.query && arguments.length > 3 && typeof arguments[2] === 'function') {
-            arguments.splice(2, 0, undefined);
+        else if (method.query && args.length >= 3 && typeof args[2] === 'function') {
+            args.splice(2, 0, undefined);
         }
-        else if (method.body && arguments.length > 3 && typeof arguments[2] === 'function') {
-            arguments.splice(1, 0, undefined);
+        else if (method.body && args.length >= 3 && typeof args[2] === 'function') {
+            args.splice(1, 0, undefined);
         }
 
-        if (arguments.length == 4
-            || arguments.length == 5 && typeof arguments[arguments.length - 1] == 'object') {
-            Discuss.prototype.send.apply(this, arguments);
+        if (args.length === 4 || args.length === 5 && typeof args[args.length - 1] === 'object') {
+            Discuss.prototype.send.apply(this, args);
         }
         else {
             throw 'Invalid parameters';
@@ -101,19 +102,28 @@
             }
         }
 
-        var timer = setTimer(function() {
+        var timer = setTimeout(function() {
             xhr.abort();
             callback(new Error('Request has timed out'));
-        }, self.options.timeout);
+        }, this.options.timeout);
 
-        xhr.readystatechange = function () {
-            clearTimeout(timeout);
+        var self = this;
+        xhr.onreadystatechange = function () {
+            clearTimeout(timer);
             if (xhr.readyState === 4) {
-                this._handleResponse(xhr.status, xhr.responseText, xhr.getAllResponseHeaders(), callback);
+                self._handleResponse(xhr.status, xhr.responseText, xhr.getAllResponseHeaders(), callback);
             }
         };
 
-        xhr.send(body);
+        if (body && typeof body === 'object') {
+            xhr.send(JSON.stringify(body));
+        }
+        else if (body && typeof body === 'string') {
+            xhr.send(body);
+        }
+        else {
+            xhr.send();
+        }
     };
 
     Discuss.prototype._handleResponse = function (status, responseText, responseHeaderText, callback) {
@@ -122,7 +132,7 @@
             try {
                 responseHeaders = this._parseResponseHeaders(responseHeaderText);
             }
-            catch {
+            catch (e) {
                 responseHeaders = new Error('Unable to parse response headers');
             }
 
@@ -130,31 +140,36 @@
                 try {
                     responseBody = JSON.parse(responseBody);
                 }
-                catch {
+                catch (e) {
                     callback(new Error('Unable to parse response body'), null, status, responseHeaders);
                 }
             }
         }
 
-        if (status < 100 || status >= 300) {
+        if (status >= 100 || status < 300 || status == 304) {
+            // Success
             callback(responseBody, null, status, responseHeaders);
         }
         else {
+            // Error of some kind
             callback(null, responseBody, status, responseHeaders);
         }
     };
 
     Discuss.prototype._parseResponseHeaders = function (responseHeaderText) {
         var headers = {};
-        for (var i in responseHeaderText.split('\n')) {
-            var splitHeader = responseHeaderText[i].split(':');
-            headers[splitHeader[0]] = splitHeader[1];
+        var lines = responseHeaderText.split('\n');
+        for (var i in lines) {
+            if (lines[i] === '') continue;
+            var line = lines[i].trim();
+            var splitHeader = line.split(':');
+            headers[splitHeader[0].trim()] = splitHeader[1].trim();
         }
         return headers;
     };
 
     Discuss.prototype._buildXHR = function () {
-        if (this.options.cors && typeof XDomainRequest !== 'undefined' {
+        if (this.options.cors && typeof XDomainRequest !== 'undefined') {
             return new XDomainRequest();
         }
         var xhr = new XMLHttpRequest();
@@ -184,9 +199,9 @@
 
     Discuss.prototype._buildHeaders = function (headers, bodyType) {
         var compiledHeaders = {};
-        for (var p in this.headers) {
-            if (this.headers.hasOwnProperty(p)) {
-                compiledHeaders[p] = this.headers[p];
+        for (var defaultHeader in this.headers) {
+            if (this.headers.hasOwnProperty(defaultHeader)) {
+                compiledHeaders[defaultHeader] = this.headers[defaultHeader];
             }
         }
         if (bodyType === 'object') {
@@ -196,9 +211,9 @@
             compiledHeaders['Content-Type'] = 'text/plain; charset=' + this.options.charset;
         }
 
-        for (var p in headers) {
-            if (headers.hasOwnProperty(p)) {
-                compiledHeaders[p] = headers[p];
+        for (var newHeader in headers) {
+            if (headers.hasOwnProperty(newHeader)) {
+                compiledHeaders[newHeader] = headers[newHeader];
             }
         }
         return compiledHeaders;
