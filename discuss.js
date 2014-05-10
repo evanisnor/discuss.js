@@ -94,7 +94,7 @@
         }
 
         var xhr = this._buildXHR();
-        xhr.open(method, this.path, true);
+        xhr.open(method, url, true);
 
         var compiledHeaders = this._buildHeaders(headers, typeof body);
         for (var p in compiledHeaders) {
@@ -109,6 +109,10 @@
         }, this.options.timeout);
 
         var self = this;
+        xhr.onerror = function () {
+            clearTimeout(timer);
+            callback(null, new Error('A network-level error has occurred'), 0);
+        };
         xhr.onreadystatechange = function () {
             clearTimeout(timer);
             if (xhr.readyState === 4) {
@@ -116,19 +120,29 @@
             }
         };
 
-        if (body && typeof body === 'object') {
-            xhr.send(JSON.stringify(body));
+        try {
+            if (body && typeof body === 'object') {
+                xhr.send(JSON.stringify(body));
+            }
+            else if (body && typeof body === 'string') {
+                xhr.send(body);
+            }
+            else {
+                xhr.send();
+            }
         }
-        else if (body && typeof body === 'string') {
-            xhr.send(body);
-        }
-        else {
-            xhr.send();
+        catch (error) {
+            xhr.onerror(error);
         }
     };
 
     Discuss.prototype._handleResponse = function (status, responseText, responseHeaderText, callback) {
-        var responseBody = responseText, responseHeaders;
+        if (status === 0) {
+            return; // Network-level error. To be handled by xhr.onerror instead.
+        }
+
+        var responseBody = responseText,
+            responseHeaders = responseHeaderText;
         if (this.options.autoParse) {
             try {
                 responseHeaders = this._parseResponseHeaders(responseHeaderText);
@@ -147,12 +161,12 @@
             }
         }
 
-        if (status >= 100 || status < 300 || status === 304) {
+        if (status >= 100 && status < 300 || status === 304) {
             // Success
             callback(responseBody, null, status, responseHeaders);
         }
         else {
-            // Error of some kind
+            // Server error of some kind
             callback(null, responseBody, status, responseHeaders);
         }
     };

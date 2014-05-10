@@ -26,7 +26,7 @@ module.exports = function(grunt){
                 options: {
                     stdout: true
                 },
-                command: 'grunt api & grunt test'
+                command: 'grunt api & grunt mocha'
             }
         },
         watch: {
@@ -44,6 +44,6 @@ module.exports = function(grunt){
     grunt.loadNpmTasks('grunt-shell');
 
     grunt.registerTask('api', [ 'execute:api' ]);
-    grunt.registerTask('test', [ 'mocha' ]);
-    grunt.registerTask('default', [ 'jshint', 'shell:run-tests', 'watch' ]);
+    grunt.registerTask('test', [ 'shell:run-tests' ]);
+    grunt.registerTask('default', [ 'jshint', 'test', 'watch' ]);
 };

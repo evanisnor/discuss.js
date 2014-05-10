@@ -1,5 +1,6 @@
 var express = require('express');
 var bodyparser = require('body-parser');
+var url = require('url');
 var app = express();
 app.use(bodyparser());
 
@@ -15,6 +16,12 @@ app.get('/user', function (req, res) {
     res.send(200, {
         username: 'testuser'
     });
+});
+
+app.get('/logs', function (req, res) {
+    var queryString = req.url.substr(req.url.indexOf('/logs') + 5);
+    console.log('GET /logs' + queryString);
+    res.send(200, queryString);
 });
 
 app.post('/highscore', function (req, res) {
@@ -35,6 +42,11 @@ app.put('/answers/:num', function (req, res) {
         about: ['life', 'the universe', 'everything'],
         original: req.body
     });
+});
+
+app.delete('/something/we/dont/need/:id', function (req, res) {
+    console.log('DELETE /something/we/dont/need/' + req.params.id);
+    res.send(200);
 });
 
 app.post('/finished', function (req, res) {

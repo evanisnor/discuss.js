@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "A lightweight JavaScript REST abstraction for the browser",
   "scripts": {
-    "test": "grunt api & grunt test"
+    "test": "grunt test"
   },
   "repository": {
     "type": "git",
