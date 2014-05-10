@@ -30,6 +30,7 @@
     "grunt-execute": "~0.2.1",
     "grunt-contrib-watch": "~0.6.1",
     "express": "~4.1.2",
-    "body-parser": "~1.0.2"
+    "body-parser": "~1.0.2",
+    "grunt-shell": "~0.7.0"
   }
 }

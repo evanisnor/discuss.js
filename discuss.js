@@ -146,7 +146,7 @@
             }
         }
 
-        if (status >= 100 || status < 300 || status == 304) {
+        if (status >= 100 || status < 300 || status === 304) {
             // Success
             callback(responseBody, null, status, responseHeaders);
         }
@@ -160,7 +160,9 @@
         var headers = {};
         var lines = responseHeaderText.split('\n');
         for (var i in lines) {
-            if (lines[i] === '') continue;
+            if (lines[i] === '') {
+                continue;
+            }
             var line = lines[i].trim();
             var splitHeader = line.split(':');
             headers[splitHeader[0].trim()] = splitHeader[1].trim();
