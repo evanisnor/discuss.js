@@ -105,7 +105,7 @@
 
         var timer = setTimeout(function() {
             xhr.abort();
-            callback(new Error('Request has timed out'));
+            callback(null, new Error('Request has timed out'), 0);
         }, this.options.timeout);
 
         var self = this;
