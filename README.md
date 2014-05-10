@@ -25,11 +25,10 @@ Perform basic actions with minimal syntax.
     	// Handle the PUT response
     });
 
-For GET requests, automatically generate a query string from an object. This example will translate into `http://yourdomain.com/api/user?location=CA&areaCode=90210`
+For GET and DELETE requests, automatically generate a query string from an object. This example will translate into `http://yourdomain.com/api/user?location=CA&areaCode=90210`
     
     user.get({ "location": "CA", "areaCode": 90210 }, function (body, error, status) {
     		// Handle the GET response
-    	}
-    );
+    });
     
     

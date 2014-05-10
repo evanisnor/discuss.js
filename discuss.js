@@ -12,6 +12,7 @@
                 body: true
             },
             'delete': {
+                query: true
             },
             'head': {
                 query: true
