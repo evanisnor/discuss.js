@@ -6,7 +6,6 @@ A lightweight REST abstraction library for JavaScript in the browser. An alterna
 
 Basic Usage
 ----------------------------
-----------------------------
 
 Instantiate a new Discuss object for each API resource
 
