@@ -3,9 +3,12 @@ describe('discuss.js', function () {
     describe('GET', function () {
         it ('should perform a basic GET', function (done) {
             var d = new Discuss('http://localhost:9000/user', { cors: true });
-            d.get(function(body, error, status) {
+            d.get(function(body, error, status, responseHeaders) {
                 chai.assert(!error);
                 chai.assert.equal(status, 200);
+                chai.assert.deepEqual(responseHeaders, {
+                    'Content-Type': 'application/json'
+                })
                 chai.assert.deepEqual(body, {
                     username: 'testuser'
                 });
@@ -14,15 +17,55 @@ describe('discuss.js', function () {
         });
 
         it ('should translate query parameter into a query string', function (done) {
-            var d = new Discuss('http://localhost:9000/logs', { cors: true, autoParse: false });
+            var d = new Discuss('http://localhost:9000/logs', { cors: true });
             d.get({ 'from': 523, 'to': 'end' },
-                function(body, error, status) {
+                function(body, error, status, responseHeaders) {
                     chai.assert(!error);
                     chai.assert.equal(status, 200);
+                    chai.assert.deepEqual(responseHeaders, {
+                        'Content-Type': 'text/html; charset=utf-8'
+                    });
                     chai.assert.equal(body, "?from=523&to=end");
                     done();
                 }
             );
+        });
+
+        it ('should accept custom headers at instantiation', function (done) {
+            var d = new Discuss('http://localhost:9000/headerbounce', { cors: true },
+                {
+                    'custom-header-a' : 'value goes here',
+                    'custom-header-b' : 'more data here',
+                }
+            );
+            d.get(function(body, error, status, responseHeaders) {
+                chai.assert(!error);
+                chai.assert.equal(status, 200);
+                chai.assert.deepEqual(responseHeaders, {
+                    'Content-Type': 'application/json'
+                });
+                chai.assert.equal(body['custom-header-a'], 'value goes here');
+                chai.assert.equal(body['custom-header-b'], 'more data here');
+                done();
+            });
+        });
+
+        it ('should accept custom headers after instatiation', function (done) {
+            var d = new Discuss('http://localhost:9000/headerbounce', { cors: true });
+            d.get(function(body, error, status, responseHeaders) {
+                chai.assert(!error);
+                chai.assert.equal(status, 200);
+                chai.assert.deepEqual(responseHeaders, {
+                    'Content-Type': 'application/json'
+                });
+                chai.assert.equal(body['custom-header-a'], 'value goes here');
+                chai.assert.equal(body['custom-header-b'], 'more data here');
+                done();
+            },
+            {
+                'custom-header-a' : 'value goes here',
+                'custom-header-b' : 'more data here',
+            });
         });
     });
 
@@ -35,7 +78,7 @@ describe('discuss.js', function () {
 
             var d = new Discuss('http://localhost:9000/highscore', { cors: true });
             d.post(postdata,
-                function(body, error, status) {
+                function(body, error, status, responseHeaders) {
                     chai.assert(!error);
                     chai.assert.equal(status, 201);
                     chai.assert.deepEqual(body, postdata);
@@ -76,6 +119,21 @@ describe('discuss.js', function () {
                 chai.assert.equal(status, 200);
                 done();
             });
+        });
+
+        it ('should translate query parameter into a query string', function (done) {
+            var d = new Discuss('http://localhost:9000/something/else/we/dont/need/43622', { cors: true });
+            d.delete({ 'zip': 90210, 'haircolor': 'brown', 'disposition': 'idiot' },
+                function(body, error, status, responseHeaders) {
+                    chai.assert(!error);
+                    chai.assert.equal(status, 200);
+                    chai.assert.deepEqual(responseHeaders, {
+                        'Content-Type': 'text/html; charset=utf-8'
+                    });
+                    chai.assert.equal(body, "?zip=90210&haircolor=brown&disposition=idiot");
+                    done();
+                }
+            );
         });
     });
 

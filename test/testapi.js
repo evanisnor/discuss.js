@@ -7,8 +7,13 @@ app.use(bodyparser());
 app.all('*', function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header('Access-Control-Allow-Methods','GET,POST,PUT,DELETE,HEAD');
-    res.header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type");
+    res.header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type, Custom-Header-A, Custom-Header-B");
     next();
+});
+
+app.all('/headerbounce', function(req, res) {
+    console.log('/headerbounce: ' + JSON.stringify(req.headers));
+    res.send(200, req.headers);
 });
 
 app.get('/user', function (req, res) {
@@ -19,7 +24,7 @@ app.get('/user', function (req, res) {
 });
 
 app.get('/logs', function (req, res) {
-    var queryString = req.url.substr(req.url.indexOf('/logs') + 5);
+    var queryString = req.url.substr(req.url.indexOf('?'));
     console.log('GET /logs' + queryString);
     res.send(200, queryString);
 });
@@ -47,6 +52,12 @@ app.put('/answers/:num', function (req, res) {
 app.delete('/something/we/dont/need/:id', function (req, res) {
     console.log('DELETE /something/we/dont/need/' + req.params.id);
     res.send(200);
+});
+
+app.delete('/something/else/we/dont/need/:id', function (req, res) {
+    var queryString = req.url.substr(req.url.indexOf('?'));
+    console.log('DELETE /something/we/dont/need/' + req.params.id + queryString);
+    res.send(200, queryString);
 });
 
 app.post('/finished', function (req, res) {
