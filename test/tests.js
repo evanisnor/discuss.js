@@ -7,9 +7,8 @@ describe('discuss.js', function () {
             d.get(function(body, error, status, responseHeaders) {
                 chai.assert(!error);
                 chai.assert.equal(status, 200);
-                chai.assert.deepEqual(responseHeaders, {
-                    'Content-Type': 'application/json'
-                })
+                chai.assert('Content-Type' in responseHeaders);
+                chai.assert(responseHeaders['Content-Type'], 'application/json');
                 chai.assert.deepEqual(body, {
                     username: 'testuser'
                 });
@@ -23,9 +22,8 @@ describe('discuss.js', function () {
                 function(body, error, status, responseHeaders) {
                     chai.assert(!error);
                     chai.assert.equal(status, 200);
-                    chai.assert.deepEqual(responseHeaders, {
-                        'Content-Type': 'text/html; charset=utf-8'
-                    });
+                    chai.assert('Content-Type' in responseHeaders);
+                    chai.assert.equal(responseHeaders['Content-Type'], 'text/html; charset=utf-8');
                     chai.assert.equal(body, "?from=523&to=end");
                     done();
                 }
@@ -42,9 +40,8 @@ describe('discuss.js', function () {
             d.get(function(body, error, status, responseHeaders) {
                 chai.assert(!error);
                 chai.assert.equal(status, 200);
-                chai.assert.deepEqual(responseHeaders, {
-                    'Content-Type': 'application/json'
-                });
+                chai.assert('Content-Type' in responseHeaders);
+                chai.assert(responseHeaders['Content-Type'], 'application/json');
                 chai.assert.equal(body['custom-header-a'], 'value goes here');
                 chai.assert.equal(body['custom-header-b'], 'more data here');
                 done();
@@ -56,9 +53,8 @@ describe('discuss.js', function () {
             d.get(function(body, error, status, responseHeaders) {
                 chai.assert(!error);
                 chai.assert.equal(status, 200);
-                chai.assert.deepEqual(responseHeaders, {
-                    'Content-Type': 'application/json'
-                });
+                chai.assert('Content-Type' in responseHeaders);
+                chai.assert(responseHeaders['Content-Type'], 'application/json');
                 chai.assert.equal(body['custom-header-a'], 'value goes here');
                 chai.assert.equal(body['custom-header-b'], 'more data here');
                 done();
@@ -128,9 +124,8 @@ describe('discuss.js', function () {
                 function(body, error, status, responseHeaders) {
                     chai.assert(!error);
                     chai.assert.equal(status, 200);
-                    chai.assert.deepEqual(responseHeaders, {
-                        'Content-Type': 'text/html; charset=utf-8'
-                    });
+                    chai.assert('Content-Type' in responseHeaders);
+                    chai.assert.equal(responseHeaders['Content-Type'], 'text/html; charset=utf-8');
                     chai.assert.equal(body, "?zip=90210&haircolor=brown&disposition=idiot");
                     done();
                 }
