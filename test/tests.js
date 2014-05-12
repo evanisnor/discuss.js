@@ -1,3 +1,4 @@
+chai.Assertion.includeStack = true;
 describe('discuss.js', function () {
 
     describe('GET', function () {
