@@ -1,5 +1,5 @@
 {
-  "name": "discussjs",
+  "name": "discuss.js",
   "main": "discuss.min.js",
   "description": "A lightweight JavaScript REST abstraction for the browser",
   "version": "0.1.0",
