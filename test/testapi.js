@@ -16,11 +16,32 @@ app.all('/headerbounce', function(req, res) {
     res.send(200, req.headers);
 });
 
+var users = {
+    '2345' : {
+        'username': 'testuser1'
+    },
+    '2346' : {
+        'username': 'testuser2'
+    },
+    '2347' : {
+        'username': 'testuser3'
+    },
+    '2348' : {
+        'username': 'testuser4'
+    }
+};
+
 app.get('/user', function (req, res) {
     console.log('GET /user');
-    res.send(200, {
-        username: 'testuser'
-    });
+    res.send(200, users);
+});
+
+app.get('/user/:id', function (req, res) {
+    if (!(req.params.id in users)) {
+        res.send(404);
+    }
+    console.log('GET /user/' + req.params.id);
+    res.send(200, users[req.params.id]);
 });
 
 app.get('/logs', function (req, res) {
