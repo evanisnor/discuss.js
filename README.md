@@ -95,6 +95,7 @@ Discuss will automatically add a `Content-Type` header for `application/json` or
 
 The `header()` and `configuration()` methods may be chained together in any order.
 
+
 License
 ---------------
 This project is distrubuted under the MIT License.
