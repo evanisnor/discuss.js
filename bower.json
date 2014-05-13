@@ -2,7 +2,7 @@
   "name": "discuss.js",
   "main": "dist/discuss.min.js",
   "description": "A lightweight JavaScript REST abstraction for the browser",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "homepage": "https://github.com/leadhead9/discuss.js",
   "authors": [
     "leadhead9 <ewisnor@gmail.com>"
