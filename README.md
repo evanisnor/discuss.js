@@ -98,3 +98,4 @@ The `header()` and `configuration()` methods may be chained together in any orde
 License
 ---------------
 This project is distrubuted under the MIT License.
+Copyright (c) 2014 Evan W. Isnor
