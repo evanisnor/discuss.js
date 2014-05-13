@@ -16,7 +16,7 @@ module.exports = function(grunt){
             }
         },
         jshint: {
-            src: ['discuss.js'],
+            src: ['dist/discuss.js'],
             options: {
                 jshintrc: '.jshintrc'
             }
@@ -24,7 +24,7 @@ module.exports = function(grunt){
         uglify: {
             build: {
                 files: {
-                    'discuss.min.js': ['discuss.js']
+                    'dist/discuss.min.js': ['dist/discuss.js']
                 }
             }
         },
@@ -38,7 +38,7 @@ module.exports = function(grunt){
         },
         watch: {
             build: {
-                files: [ '**/*.js'],
+                files: [ 'dist/discuss.js'],
                 tasks: [ 'default' ]
             },
         }
