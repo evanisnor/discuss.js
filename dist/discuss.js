@@ -41,7 +41,7 @@
      * @param reqHeaders - An Object (key/value)
      * @return Discuss instance
      */
-    Discuss.prototype.headers = function (reqHeaders) {
+    Discuss.prototype.header = function (reqHeaders) {
         if (typeof reqHeaders === 'object') {
             this.reqHeaders = reqHeaders;
         }
@@ -162,7 +162,7 @@
      * @param - Request headers (key/value)
      * @return Request instance
      */
-    Request.prototype.headers = function (reqHeaders) {
+    Request.prototype.header = function (reqHeaders) {
         if (typeof reqHeaders === 'object') {
             this.reqHeaders = reqHeaders;
         }

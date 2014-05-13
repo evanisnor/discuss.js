@@ -63,7 +63,7 @@ describe('discuss.js', function () {
         it ('should accept custom headers at instantiation', function (done) {
             var d = new Discuss('http://localhost:9000/headerbounce')
                 .configure({ cors: true })
-                .headers({
+                .header({
                     'custom-header-a' : 'value goes here',
                     'custom-header-b' : 'more data here',
                 });
@@ -84,7 +84,7 @@ describe('discuss.js', function () {
         it ('should accept custom headers after instatiation', function (done) {
             var d = new Discuss('http://localhost:9000/headerbounce').configure({ cors: true });
 
-            d.get().headers({
+            d.get().header({
                     'custom-header-a' : 'value goes here',
                     'custom-header-b' : 'more data here',
                 })
@@ -189,7 +189,7 @@ describe('discuss.js', function () {
                     chai.assert.equal(status, 0);
                     done();
                 }).send();
-                
+
             }).error(function() {
                 chai.assert(false);
                 done();
