@@ -1,50 +1,20 @@
 (function (scope) {
+    var Discuss, Request, Utilities = {};
 
-    var Request = function (d, method, path) {
-        this.d = d;
-        this.method = method;
-        this.path = path;
-    };
-
-    Request.prototype.headers = function (reqHeaders) {
-        if (typeof reqHeaders === 'object') {
-            this.reqHeaders = reqHeaders;
-        }
-        return this;
-    };
-
-    Request.prototype.query = function (_query) {
-        if (this.method.query && (typeof _query === 'object' || typeof _query === 'string')) {
-            this._query = _query;
-        }
-        return this;
-    };
-
-    Request.prototype.body = function (_body) {
-        if (this.method.body && (typeof _body === 'object' || typeof _body === 'string')) {
-            this._body = _body;
-        }
-        return this;
-    };
-
-    Request.prototype.success = function(onSuccess) {
-        this.onSuccess = onSuccess;
-        return this;
-    };
-
-    Request.prototype.error = function(onError) {
-        this.onError = onError;
-        return this;
-    };
-
-    Request.prototype.send = function () {
-        var self = this;
-        (function () {
-            self.d.send(self);
-        })();
-    };
-
-    var Discuss = function (basepath) {
+    /*
+     * Declare an HTTP resource to talk to.
+     *
+     * Options may be set by calling the configure decorator with an object that declares
+     * any of these parameters:
+     *      charset     (default: utf-8)    - Used for plain text HTTP requests
+     *      autoParse   (default: true)     - Automatically parse bodies and headers to and from Objects (JSON)
+     *      timeout     (default: 30000ms)  - Request timeout in milliseconds
+     *      cors        (default: false)    - Enable CORS support for older browsers
+     *      corsWithCredentials     (default: false) - Enable CORS support with credentials
+     *
+     * @param basepath - An HTTP endpoint
+     */
+    Discuss = function (basepath) {
         this.methods = [
             { name : 'get', query: true },
             { name : 'post', body: true },
@@ -65,6 +35,12 @@
         this.setupMethodHandlers();
     };
 
+    /*
+     * Decorator for declaring headers that will apply to all HTTP requests sent from this
+     * Discuss object.
+     * @param reqHeaders - An Object (key/value)
+     * @return Discuss instance
+     */
     Discuss.prototype.headers = function (reqHeaders) {
         if (typeof reqHeaders === 'object') {
             this.reqHeaders = reqHeaders;
@@ -72,6 +48,11 @@
         return this;
     };
 
+    /*
+     * Decorator for configuring the Discuss object. See constructor docs for options.
+     * @param options - Object (key/value)
+     * @return Discuss instance
+     */
     Discuss.prototype.configure = function (options) {
         for (var o in options) {
             if (options.hasOwnProperty(o) && this.options.hasOwnProperty(o)) {
@@ -81,6 +62,9 @@
         return this;
     };
 
+    /*
+     * Add functions to the Discuss prototype for each HTTP method.
+     */
     Discuss.prototype.setupMethodHandlers = function () {
         var self = this;
         for (var i in this.methods) {
@@ -92,20 +76,6 @@
         }
     };
 
-    Discuss.prototype.buildXHR = function () {
-        if (this.options.cors && typeof XDomainRequest !== 'undefined') {
-            return new XDomainRequest();
-        }
-        var xhr = new XMLHttpRequest();
-        if (this.options.cors && !('withCredentials' in xhr)) {
-            throw 'CORS is not supported by this user agent';
-        }
-        else if (this.options.cors && this.options.corsWithCredentials && 'withCredentials' in xhr) {
-            xhr.withCredentials = 'true';
-        }
-        return xhr;
-    };
-
     Discuss.prototype.send = function (request) {
         if (!request || !(request instanceof Request) || !request.onSuccess) {
             throw new Error('Invalid send parameters');
@@ -113,17 +83,17 @@
 
         var url = this.basepath;
         if (request.path) {
-            url = this.joinPaths(this.basepath, request.path);
+            url = Utilities.joinPaths(this.basepath, request.path);
         }
 
         if (request._query) {
-            url = url + this.buildQueryString(request._query);
+            url = url + Utilities.buildQueryString(request._query);
         }
 
-        var xhr = this.buildXHR();
+        var xhr = Utilities.buildXHR(this.options.cors, this.options.corsWithCredentials);
         xhr.open(request.method.name, url, true);
 
-        var headers = this.buildHeaders(request.reqHeaders, typeof request._body);
+        var headers = Utilities.buildHeaders(this.reqHeaders, request.reqHeaders, typeof request._body, this.options.charset);
         for (var header in headers) {
             if (headers.hasOwnProperty(header)) {
                 xhr.setRequestHeader(header, headers[header]);
@@ -147,8 +117,8 @@
         xhr.onreadystatechange = function () {
             clearTimeout(timer);
             if (xhr.readyState === 4) {
-                var responseHeaders = self.parseResponseHeaders(xhr.getAllResponseHeaders());
-                var responseBody = self.parseResponseBody(xhr.responseText, responseHeaders);
+                var responseHeaders = Utilities.parseResponseHeaders(xhr.getAllResponseHeaders(), self.options.autoParse);
+                var responseBody = Utilities.parseResponseBody(xhr.responseText, responseHeaders, self.options.autoParse);
                 var callback = (xhr.status >= 100 && xhr.status < 300 || xhr.status === 304) ? request.onSuccess : request.onError;
                 if (callback && xhr.status !== 0) {
                     callback(responseBody, xhr.status, responseHeaders);
@@ -175,12 +145,151 @@
 
     };
 
-    Discuss.prototype.buildQueryString = function (query) {
-        if (typeof query === 'string' && /^[?]((?:(?!=[\w*-+_.!'()$])&|([\w*-+_.!'()$]+=[\w*-+_.!'()$]+))+)*$/.test(query)) {
+    /*
+     * HTTP Request builder - decorator pattern.
+     * @param d - Reference to the parent Discuss object
+     * @param method - Object declaring the HTTP method name and properties
+     * @param path - The path portion of the URL to send the request to
+     */
+    Request = function (d, method, path) {
+        this.d = d;
+        this.method = method;
+        this.path = path;
+    };
+
+    /*
+     * Declare request headers in Object (key/value) format
+     * @param - Request headers (key/value)
+     * @return Request instance
+     */
+    Request.prototype.headers = function (reqHeaders) {
+        if (typeof reqHeaders === 'object') {
+            this.reqHeaders = reqHeaders;
+        }
+        return this;
+    };
+
+    /*
+     * Declare a Query string in standard URL query format or by providing an object with
+     * key/value pairs. Query will only be set if the HTTP method supports it (GET/DELETE/HEAD).
+     * @param _query - Query string or Object
+     * @return Request instance
+     */
+    Request.prototype.query = function (_query) {
+        if (this.method.query && (typeof _query === 'object' || typeof _query === 'string')) {
+            this._query = _query;
+        }
+        return this;
+    };
+
+    /*
+     * Declare a request body in Object or String format. For objects, the 'application/json'
+     * header will be automatically added during sending. Body will oly be set if the HTTP
+     * method supports it (POST/PUT).
+     * @param _body - Object or string content for the HTTP request
+     * @return Request instance
+     */
+    Request.prototype.body = function (_body) {
+        if (this.method.body && (typeof _body === 'object' || typeof _body === 'string')) {
+            this._body = _body;
+        }
+        return this;
+    };
+
+    /*
+     * Declare a callback to be called when the HTTP request is successful. The callback will
+     * be triggered with the following signature: (body, status, responseHeaders), where the
+     * body and responseHeaders will be parsed into Objects if the 'autoParse' option is enabled.
+     * @param onSuccess - A function to be called after successful HTTP request
+     * @return Request instance
+     */
+    Request.prototype.success = function(onSuccess) {
+        this.onSuccess = onSuccess;
+        return this;
+    };
+
+    /*
+     * Declare a callback to be called when the HTTP request has encountered an error, server side
+     * or local. The callback will be triggered with the following signature: (error, status, responseHeaders),
+     * where the error and response headers will be parsed into Objects if the 'autoParse' option is enabled.
+     * @param onError - A function to be called after an unsuccessful HTTP request
+     * @return Request instance
+     */
+    Request.prototype.error = function(onError) {
+        this.onError = onError;
+        return this;
+    };
+
+    /*
+     * Send the request after building it.
+     */
+    Request.prototype.send = function () {
+        var self = this;
+        (function () {
+            self.d.send(self);
+        })();
+    };
+
+    /*
+     * Build an XMLHttpRequest object based on the user agent and CORS options
+     * @return XMLHttpRequest
+     */
+    Utilities.buildXHR = function (isCorsEnabled, isCorsWithCredentialsEnabled) {
+        if (isCorsEnabled && typeof XDomainRequest !== 'undefined') {
+            return new XDomainRequest();
+        }
+        var xhr = new XMLHttpRequest();
+        if (isCorsEnabled && !('withCredentials' in xhr)) {
+            throw new Error('CORS is not supported by this user agent');
+        }
+        else if (isCorsEnabled && isCorsWithCredentialsEnabled && 'withCredentials' in xhr) {
+            xhr.withCredentials = 'true';
+        }
+        return xhr;
+    };
+
+    /*
+     * Build a request header object by combining all declared headers. Will automatically
+     * populate the Content-Type header as long as the Body type is an object or string.
+     * @param discussHeaders - An object of header key/values declared on the Discuss object
+     * @param requestHeaders - An object of header key/values declared on the Request object
+     * @param bodyType - The object type (typeof) of the HTTP request content
+     * @param charset - The encoding to declare for a request body that is a string
+     * @return An object containing all compiled headers
+     */
+    Utilities.buildHeaders = function (discussHeaders, requestHeaders, bodyType, charset) {
+        var compiledHeaders = {};
+        for (var defaultHeader in discussHeaders) {
+            if (discussHeaders.hasOwnProperty(defaultHeader)) {
+                compiledHeaders[defaultHeader] = discussHeaders[defaultHeader];
+            }
+        }
+        if (bodyType === 'object') {
+            compiledHeaders['Content-Type'] = 'application/json';
+        }
+        else if (bodyType === 'string') {
+            compiledHeaders['Content-Type'] = 'text/html; charset=' + charset;
+        }
+
+        for (var newHeader in requestHeaders) {
+            if (requestHeaders.hasOwnProperty(newHeader)) {
+                compiledHeaders[newHeader] = requestHeaders[newHeader];
+            }
+        }
+        return compiledHeaders;
+    };
+
+    /*
+     * Build a valid query string from an Object or from a properly formatted query string. 
+     * @param query - A query string or Object (key/value)
+     * @return A valid query string
+     */
+    Utilities.buildQueryString = function (query) {
+        if (typeof query === 'string' && /^[?](?:(?:(?!=[^?&=])&|(?:[^?&=]+=[^?&=]+))+)*$/.test(query)) {
             // Test for a query string with a leading question mark
             return query;
         }
-        else if (typeof query === 'string' && /^((?:(?!=[\w*-+_.!'()$])&|([\w*-+_.!'()$]+=[\w*-+_.!'()$]+))+)*$/.test(query)) {
+        else if (typeof query === 'string' && /^(?:(?:(?!=[^?&=])&|(?:[^?&=]+=[^?&=]+))+)*$/.test(query)) {
             // Add a leading question mark if the query string is otherwise valid
             return '?' + query;
         }
@@ -199,9 +308,16 @@
         return '';
     };
 
-    Discuss.prototype.parseResponseHeaders = function(responseHeaderText) {
+    /*
+     * Return response headers. If autoParse is enabled, will attempt to parse them into
+     * an object.
+     * @param responseHeaderText - The header text from the HTTP response
+     * @param isAutoParseEnabled - Parse the headers into an object if true
+     * @return A string or an object containing HTTP headers
+     */
+    Utilities.parseResponseHeaders = function(responseHeaderText, isAutoParseEnabled) {
         var responseHeaders = responseHeaderText;
-        if (this.options.autoParse) {
+        if (isAutoParseEnabled) {
             try {
                 var headers = {};
                 var lines = responseHeaderText.split('\n');
@@ -222,10 +338,19 @@
         return responseHeaders;
     };
 
-    Discuss.prototype.parseResponseBody = function (responseText, responseHeaders) {
+    /*
+     * Parses the response body into an Object if autoParse is enabled and if the response headers
+     * contain the 'application/json' Content-Type.
+     * @param responseText - The body of the HTTP response
+     * @param responseHeaders - The headers from the HTTP response as a String or an Object (key/value)
+     * @param isAutoParseEnabled - Parse the body into a object if true.
+     * @return A string or an object containing the body of the response
+     */
+    Utilities.parseResponseBody = function (responseText, responseHeaders, isAutoParseEnabled) {
         var responseBody = responseText;
-        if (this.options.autoParse && typeof responseHeaders === 'object') {
-            if ('Content-Type' in responseHeaders && responseHeaders['Content-Type'].indexOf('application/json') > -1) {
+        if (isAutoParseEnabled) {
+            if ((typeof responseHeaders === 'object' && 'Content-Type' in responseHeaders && responseHeaders['Content-Type'].indexOf('application/json') > -1) ||
+                (typeof responseHeaders === 'string' && /^Content-Type:.*application\/json.*$/m.test(responseHeaders))) {
                 try {
                     responseBody = JSON.parse(responseBody);
                 }
@@ -237,181 +362,13 @@
         return responseBody;
     };
 
-
     /*
-     *  Discuss.request(method [, pathAmmendment] [, query | body], callback [, headers]);
+     * Combine two portions of a URL. Accounts for forward slashes and concatenates them.
+     * @param first - Left string argument
+     * @param second - Right string argument
+     * @return A concatenated URL
      */
-    // Discuss.prototype.request = function () {
-    //     var args = Array.prototype.slice.call(arguments);
-    //     if (typeof args[0] !== 'string' || !(args[0] in this.methods)) {
-    //         throw 'Invalid method type: ' + (typeof args[0]);
-    //     }
-
-    //     var method = this.methods[args[0]];
-
-    //     if (args[1] && typeof args[1] === 'number') {
-    //         args[1] = args[1].toString();
-    //     }
-
-    //     if (args.length >= 2 && typeof args[1] === 'function') {
-    //         args.splice(1, 0, undefined, undefined, undefined);
-    //     }
-    //     else if (method.query && args.length >= 3 && typeof args[1] === 'string' && (typeof args[2] === 'string' || typeof args[2] === 'object') && typeof args[3] === 'function') {
-    //         args.splice(3, 0, undefined);
-    //     }
-    //     else if (method.body && args.length >= 3 && typeof args[1] === 'string' && (typeof args[2] === 'string' || typeof args[2] === 'object') && typeof args[3] === 'function') {
-    //         args.splice(2, 0, undefined);
-    //     }
-    //     else if (method.query && args.length >= 2 && (typeof args[1] === 'string' || typeof args[1] === 'object') && typeof args[2] === 'function') {
-    //         args.splice(2, 0, undefined);
-    //         args.splice(1, 0, undefined);
-    //     }
-    //     else if (method.body && args.length >= 2 && (typeof args[1] === 'string' || typeof args[1] === 'object') && typeof args[2] === 'function') {
-    //         args.splice(1, 0, undefined, undefined);
-    //     }
-
-    //     if (args.length == 5) {
-    //         args.push(undefined);
-    //     }
-
-    //     if (args.length === 6
-    //         && (typeof args[1] === 'string' || !args[1])
-    //         && (typeof args[2] === 'string' || typeof args[2] === 'object' ||!args[2])
-    //         && (typeof args[3] === 'string' || typeof args[3] === 'object' ||!args[3])
-    //         && (typeof args[4] === 'function' || !args[4])
-    //         && (typeof args[5] === 'object' || !args[5])) {
-    //         Discuss.prototype.send.apply(this, args);
-    //     }
-    //     else {
-    //         throw new Error('Invalid parameters');
-    //     }
-    // };
-
-    // Discuss.prototype._send = function (method, path, query, body, callback, headers) {
-    //     var url = this.basepath;
-    //     if (path && typeof path === 'string') {
-    //         url = this.joinPaths(this.basepath, path);
-    //     }
-
-    //     if (query && typeof query === 'object' && Object.keys(query).length > 0) {
-    //         url = url + this._buildQueryString(query);
-    //     }
-
-    //     var xhr = this._buildXHR();
-    //     xhr.open(method, url, true);
-
-    //     var compiledHeaders = this._buildHeaders(headers, typeof body);
-    //     for (var p in compiledHeaders) {
-    //         if (compiledHeaders.hasOwnProperty(p)) {
-    //             xhr.setRequestHeader(p, compiledHeaders[p]);
-    //         }
-    //     }
-
-    //     var timer = setTimeout(function() {
-    //         xhr.abort();
-    //         callback(null, new Error('Request has timed out'), 0);
-    //     }, this.options.timeout);
-
-    //     var self = this;
-    //     xhr.onerror = function () {
-    //         clearTimeout(timer);
-    //         callback(null, new Error('A network-level error has occurred'), 0);
-    //     };
-    //     xhr.onreadystatechange = function () {
-    //         clearTimeout(timer);
-    //         if (xhr.readyState === 4) {
-    //             self._handleResponse(xhr.status, xhr.responseText, xhr.getAllResponseHeaders(), callback);
-    //         }
-    //     };
-
-    //     try {
-    //         if (body && typeof body === 'object') {
-    //             xhr.send(JSON.stringify(body));
-    //         }
-    //         else if (body && typeof body === 'string') {
-    //             xhr.send(body);
-    //         }
-    //         else {
-    //             xhr.send();
-    //         }
-    //     }
-    //     catch (error) {
-    //         xhr.onerror(error);
-    //     }
-    // };
-
-    // Discuss.prototype._handleResponse = function (status, responseText, responseHeaderText, callback) {
-    //     if (status === 0) {
-    //         return; // Network-level error. To be handled by xhr.onerror instead.
-    //     }
-
-    //     var responseBody = responseText,
-    //         responseHeaders = responseHeaderText;
-    //     if (this.options.autoParse) {
-    //         try {
-    //             responseHeaders = this._parseResponseHeaders(responseHeaderText);
-    //         }
-    //         catch (e) {
-    //             responseHeaders = new Error('Unable to parse response headers');
-    //         }
-
-    //         if ('Content-Type' in responseHeaders && responseHeaders['Content-Type'].indexOf('application/json') > -1) {
-    //             try {
-    //                 responseBody = JSON.parse(responseBody);
-    //             }
-    //             catch (e) {
-    //                 callback(new Error('Unable to parse response body'), null, status, responseHeaders);
-    //             }
-    //         }
-    //     }
-
-    //     if (status >= 100 && status < 300 || status === 304) {
-    //         // Success
-    //         callback(responseBody, null, status, responseHeaders);
-    //     }
-    //     else {
-    //         // Server error of some kind
-    //         callback(null, responseBody, status, responseHeaders);
-    //     }
-    // };
-
-    // Discuss.prototype._parseResponseHeaders = function (responseHeaderText) {
-    //     var headers = {};
-    //     var lines = responseHeaderText.split('\n');
-    //     for (var i in lines) {
-    //         if (lines[i] === '') {
-    //             continue;
-    //         }
-    //         var line = lines[i].trim();
-    //         var splitHeader = line.split(':');
-    //         headers[splitHeader[0].trim()] = splitHeader[1].trim();
-    //     }
-    //     return headers;
-    // };
-
-    Discuss.prototype.buildHeaders = function (headers, bodyType) {
-        var compiledHeaders = {};
-        for (var defaultHeader in this.reqHeaders) {
-            if (this.reqHeaders.hasOwnProperty(defaultHeader)) {
-                compiledHeaders[defaultHeader] = this.reqHeaders[defaultHeader];
-            }
-        }
-        if (bodyType === 'object') {
-            compiledHeaders['Content-Type'] = 'application/json';
-        }
-        else if (bodyType === 'string') {
-            compiledHeaders['Content-Type'] = 'text/plain; charset=' + this.options.charset;
-        }
-
-        for (var newHeader in headers) {
-            if (headers.hasOwnProperty(newHeader)) {
-                compiledHeaders[newHeader] = headers[newHeader];
-            }
-        }
-        return compiledHeaders;
-    };
-
-    Discuss.prototype.joinPaths = function (first, second) {
+    Utilities.joinPaths = function (first, second) {
         if (typeof second === 'number') {
             second = second.toString();
         }
@@ -422,7 +379,7 @@
             return endsWithSlash.exec(first)[1] + '/' + beginsWithSlash.exec(second)[1];
         }
         else {
-            throw 'Unable to parse paths';
+            throw new Error('Unable to parse paths');
         }
     };
 

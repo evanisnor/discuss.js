@@ -53,5 +53,6 @@ module.exports = function(grunt){
 
     grunt.registerTask('api', [ 'execute:api' ]);
     grunt.registerTask('test', [ 'shell:run-tests' ]);
-    grunt.registerTask('default', [ 'jshint', 'test', 'uglify', 'watch' ]);
+    grunt.registerTask('build', [ 'jshint', 'test', 'uglify' ]);
+    grunt.registerTask('default', [ 'build', 'watch' ]);
 };
