@@ -88,7 +88,7 @@ Header objects may be applied to a Discuss instance or during request building.
         })
         .success(function(body, status) {
             // Handle success
-        }
+        })
         .send();
 
 Discuss will automatically add a `Content-Type` header for `application/json` or `text/html` (in the specified charset, default utf-8). In the event of a header conflict, headers declared during instantiation will be overwritten by headers declared during request building. Request building headers will also overwrite any automatic headers provided by this library.
