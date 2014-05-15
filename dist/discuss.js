@@ -66,13 +66,12 @@
      * Add functions to the Discuss prototype for each HTTP method.
      */
     Discuss.prototype.setupMethodHandlers = function () {
-        var self = this;
         for (var i in this.methods) {
-            (function (method) {
-                Discuss.prototype[method.name] = function (path) {
-                    return new Request(self, method, path);
+            (function (instance, method) {
+                instance[method.name] = function (path) {
+                    return new Request(instance, method, path);
                 };
-            }(this.methods[i]));
+            }(this, this.methods[i]));
         }
     };
 
