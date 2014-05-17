@@ -362,24 +362,40 @@
     };
 
     /*
-     * Combine two portions of a URL. Accounts for forward slashes and concatenates them.
-     * @param first - Left string argument
-     * @param second - Right string argument
-     * @return A concatenated URL
+     * Combine portions of a URL.
+     * @param arguments - Arguments to join into a path
+     * @return A concatenated path
      */
-    Utilities.joinPaths = function (first, second) {
-        if (typeof second === 'number') {
-            second = second.toString();
-        }
+    Utilities.joinPaths = function () {
+        var args = Array.prototype.slice.call(arguments);
+        var elements = [];
+        for (var i in args) {
+            if (!args[i] || typeof args[i] === 'object' || typeof args[i] === 'function') {
+                args[i] = '';
+            }
+            else if (typeof args[i] !== 'string') {
+                args[i] = '' + args[i];
+            }
+            else if (/.+\?.*/.test(args[i])) {
+                args[i] = args[i].match(/(.+)\?.*/)[1];
+            }
 
-        var endsWithSlash = new RegExp(/^(.*\w)\/*$/);
-        var beginsWithSlash = new RegExp(/^\/*(.*\w)$/);
-        if (endsWithSlash.test(first) && beginsWithSlash.test(second)) {
-            return endsWithSlash.exec(first)[1] + '/' + beginsWithSlash.exec(second)[1];
+            var matches = args[i].match(/((?:[a-zA-Z]+:\/\/)?[^\/?&=]+)/g);
+            if (matches && matches.length > 0) {
+                Array.prototype.push.apply(elements, matches);
+            }
         }
-        else {
-            throw new Error('Unable to parse paths');
+        var uri = elements.join('/');
+        if (!/[a-zA-Z]+:\/\/.+/.test(uri)) {
+            return '/' + uri;
         }
+        return uri;
+    };
+
+
+    Discuss._support = {
+        Request: Request,
+        Utilities: Utilities
     };
 
     if (typeof define === 'function') {
