@@ -81,6 +81,10 @@
         }
 
         var url = this.basepath;
+        if (!url) {
+            url = '';
+        }
+        
         if (request.path) {
             url = Utilities.joinPaths(this.basepath, request.path);
         }
