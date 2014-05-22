@@ -323,7 +323,7 @@
         if (isAutoParseEnabled) {
             try {
                 var headers = {};
-                var lines = responseHeaderText.split('/(\n)|(\r\n)/');
+                var lines = responseHeaderText.replace(/\\r\\n/g, '\n').split('\n');
                 for (var i in lines) {
                     if (lines[i] === '') {
                         continue;
