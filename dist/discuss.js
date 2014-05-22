@@ -84,7 +84,7 @@
         if (!url) {
             url = '';
         }
-        
+
         if (request.path) {
             url = Utilities.joinPaths(this.basepath, request.path);
         }
@@ -323,7 +323,7 @@
         if (isAutoParseEnabled) {
             try {
                 var headers = {};
-                var lines = responseHeaderText.split('\n');
+                var lines = responseHeaderText.split('/(\n)|(\r\n)/');
                 for (var i in lines) {
                     if (lines[i] === '') {
                         continue;

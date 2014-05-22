@@ -1,6 +1,6 @@
 {
   "name": "discuss.js",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A lightweight JavaScript REST abstraction for the browser",
   "scripts": {
     "test": "grunt test"
