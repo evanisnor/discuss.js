@@ -33,6 +33,7 @@
             corsWithCredentials: false
         };
         this.setupMethodHandlers();
+        this.promiseLib = this.detectPromise();
     };
 
     /*
@@ -75,77 +76,131 @@
         }
     };
 
+    /*
+     * Determine if Promises are supported by the current environment.
+     * Only supports libraries that abide by the Promises/A+ spec and implemet deferred promises.
+     */
+    Discuss.prototype.detectPromise = function () {
+        try {
+            var supportedLibs = [window['Promise'], window['Q'], window['assure'], window['Promiz'], window['Y']];
+            for (var i in supportedLibs) {
+                var lib = supportedLibs[i];
+                if (!!lib && !!lib.defer) {
+                    return lib;
+                }
+            }
+        }
+        catch (e) {
+        }
+        return undefined;
+    };
+
     Discuss.prototype.send = function (request) {
-        if (!request || !(request instanceof Request) || !request.onSuccess) {
-            throw new Error('Invalid send parameters');
-        }
-
-        var url = this.basepath;
-        if (!url) {
-            url = '';
-        }
-
-        if (request.path) {
-            url = Utilities.joinPaths(this.basepath, request.path);
-        }
-
-        if (request._query) {
-            url = url + Utilities.buildQueryString(request._query);
-        }
-
-        var xhr = Utilities.buildXHR(this.options.cors, this.options.corsWithCredentials);
-        xhr.open(request.method.name, url, true);
-
-        var headers = Utilities.buildHeaders(this.reqHeaders, request.reqHeaders, typeof request._body, this.options.charset);
-        for (var header in headers) {
-            if (headers.hasOwnProperty(header)) {
-                xhr.setRequestHeader(header, headers[header]);
-            }
-        }
-
-        var timer = setTimeout(function() {
-            xhr.abort();
-            if (request.onError) {
-                request.onError('A network timeout has occurred', 0);
-            }
-        }, this.options.timeout);
-
         var self = this;
-        xhr.onerror = function () {
-            clearTimeout(timer);
-            if (request.onError) {
-                request.onError('A network-level exception has occurred', 0);
+        var routine = function (resolve, reject) {
+            if (!request || !(request instanceof Request)) {
+                throw new Error('Invalid send parameters');
             }
-        };
-        xhr.onreadystatechange = function () {
-            clearTimeout(timer);
-            if (xhr.readyState === 4) {
-                var responseHeaders = Utilities.parseResponseHeaders(xhr.getAllResponseHeaders(), self.options.autoParse);
-                var responseBody = Utilities.parseResponseBody(xhr.responseText, responseHeaders, self.options.autoParse);
-                var callback = (xhr.status >= 100 && xhr.status < 300 || xhr.status === 304) ? request.onSuccess : request.onError;
-                if (callback && xhr.status !== 0) {
-                    callback(responseBody, xhr.status, responseHeaders);
+
+            var url = self.basepath;
+            if (!url) {
+                url = '';
+            }
+
+            if (request.path) {
+                url = Utilities.joinPaths(self.basepath, request.path);
+            }
+
+            if (request._query) {
+                url = url + Utilities.buildQueryString(request._query);
+            }
+
+            var xhr = Utilities.buildXHR(self.options.cors, self.options.corsWithCredentials);
+            xhr.open(request.method.name, url, true);
+
+            var headers = Utilities.buildHeaders(self.reqHeaders, request.reqHeaders, typeof request._body, self.options.charset);
+            for (var header in headers) {
+                if (headers.hasOwnProperty(header)) {
+                    xhr.setRequestHeader(header, headers[header]);
+                }
+            }
+
+            var timer = setTimeout(function() {
+                xhr.abort();
+                if (reject && self.promiseLib) {
+                    reject({
+                        body: 'A network timeout has occurred',
+                        status: 0
+                    });
+                }
+                else if (reject) {
+                    reject('A network timeout has occurred', 0);
+                }
+            }, self.options.timeout);
+
+            xhr.onerror = function () {
+                clearTimeout(timer);
+                if (reject && self.promiseLib) {
+                    reject({
+                        body: 'A network-level exception has occurred',
+                        status: 0
+                    });
+                }
+                else if (reject) {
+                    reject('A network-level exception has occurred', 0);
+                }
+            };
+            xhr.onreadystatechange = function () {
+                clearTimeout(timer);
+                if (xhr.readyState === 4) {
+                    var responseHeaders = Utilities.parseResponseHeaders(xhr.getAllResponseHeaders(), self.options.autoParse);
+                    var responseBody = Utilities.parseResponseBody(xhr.responseText, responseHeaders, self.options.autoParse);
+                    var callback = (xhr.status >= 100 && xhr.status < 300 || xhr.status === 304) ? resolve : reject;
+                    if (callback && xhr.status !== 0 && self.promiseLib) {
+                        callback({
+                            body: responseBody,
+                            status: xhr.status,
+                            headers: responseHeaders
+                        });
+                    }
+                    else if (callback && xhr.status !== 0) {
+                        callback(responseBody, xhr.status, responseHeaders);
+                    }
+                }
+            };
+
+            try {
+                if (request._body && typeof request._body === 'object') {
+                    xhr.send(JSON.stringify(request._body));
+                }
+                else if (request._body && typeof request._body === 'string') {
+                    xhr.send(request._body);
+                }
+                else {
+                    xhr.send();
+                }
+            }
+            catch (error) {
+                if (reject && self.promiseLib) {
+                    reject({
+                        body: error,
+                        status: 0
+                    });
+                }
+                else if (reject) {
+                    reject(error, 0);
                 }
             }
         };
 
-        try {
-            if (request._body && typeof request._body === 'object') {
-                xhr.send(JSON.stringify(request._body));
-            }
-            else if (request._body && typeof request._body === 'string') {
-                xhr.send(request._body);
-            }
-            else {
-                xhr.send();
-            }
+        if (this.promiseLib) {
+            var deferred = this.promiseLib.defer();
+            routine(deferred.resolve, deferred.reject);
+            return deferred.promise;
         }
-        catch (error) {
-            if (request.onError) {
-                request.onError(error, 0);
-            }
+        else {
+            routine(request.onSuccess, request.onError);
         }
-
     };
 
     /*
@@ -228,8 +283,8 @@
      */
     Request.prototype.send = function () {
         var self = this;
-        (function () {
-            self.d.send(self);
+        return (function () {
+            return self.d.send(self);
         })();
     };
 

@@ -174,26 +174,26 @@ describe('discuss.js', function () {
         });
     });
 
-    describe('', function () {
-        it ('should destroy the Test API server', function (done) {
-            var d = new Discuss('http://localhost:9000/finished').configure({ cors: true, timeout: 1000 });
-            d.post().success(function(body, status) {
-                chai.assert.equal(status, 200);
+    // describe('', function () {
+    //     it ('should destroy the Test API server', function (done) {
+    //         var d = new Discuss('http://localhost:9000/finished').configure({ cors: true, timeout: 1000 });
+    //         d.post().success(function(body, status) {
+    //             chai.assert.equal(status, 200);
            
-                d.post().success(function() {
-                    chai.assert(false);
-                    done();
-                })
-                .error(function (error, status) {
-                    // Verify that it's dead
-                    chai.assert.equal(status, 0);
-                    done();
-                }).send();
+    //             d.post().success(function() {
+    //                 chai.assert(false);
+    //                 done();
+    //             })
+    //             .error(function (error, status) {
+    //                 // Verify that it's dead
+    //                 chai.assert.equal(status, 0);
+    //                 done();
+    //             }).send();
 
-            }).error(function() {
-                chai.assert(false);
-                done();
-            }).send();
-        });
-    });
+    //         }).error(function() {
+    //             chai.assert(false);
+    //             done();
+    //         }).send();
+    //     });
+    // });
 });

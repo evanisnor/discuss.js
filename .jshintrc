@@ -15,6 +15,7 @@
         "document" : false,
         "define" : false,
         "XDomainRequest" : false,
-        "XMLHttpRequest" : false
+        "XMLHttpRequest" : false,
+        "Promise" : false
     }
 }

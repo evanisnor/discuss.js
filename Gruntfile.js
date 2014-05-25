@@ -9,7 +9,7 @@ module.exports = function(grunt){
         },
         mocha: {
             all: {
-                src: ['test/testrunner.html']
+                src: ['test/testrunner.html','test/testrunner-promises.html']
             },
             options: {
                 run: true
