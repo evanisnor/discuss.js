@@ -13,6 +13,7 @@
     "loopfunc": true,
     "globals": {
         "document" : false,
+        "window" : false,
         "define" : false,
         "XDomainRequest" : false,
         "XMLHttpRequest" : false,
