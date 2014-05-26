@@ -11,6 +11,7 @@
      *      timeout     (default: 30000ms)  - Request timeout in milliseconds
      *      cors        (default: false)    - Enable CORS support for older browsers
      *      corsWithCredentials     (default: false) - Enable CORS support with credentials
+     *      noPromises  (default: false)    - Ignore any present Promises libs and force the alternate chaining syntax
      *
      * @param basepath - An HTTP endpoint
      */
@@ -30,7 +31,8 @@
             autoParse: true,  // Automatic parsing of response object to JSON if the content type is application/json
             timeout: 30000,
             cors: false,
-            corsWithCredentials: false
+            corsWithCredentials: false,
+            noPromises: false
         };
         this.setupMethodHandlers();
         this.promiseLib = this.detectPromise();
@@ -78,19 +80,21 @@
 
     /*
      * Determine if Promises are supported by the current environment.
-     * Only supports libraries that abide by the Promises/A+ spec and implemet deferred promises.
+     * Only supports libraries that abide by the Promises/A+ spec and implement deferred promises.
      */
     Discuss.prototype.detectPromise = function () {
-        try {
-            var supportedLibs = [window['Promise'], window['Q'], window['assure'], window['Promiz'], window['Y']];
-            for (var i in supportedLibs) {
-                var lib = supportedLibs[i];
-                if (!!lib && !!lib.defer) {
-                    return lib;
+        if (!this.options.noPromises) {
+            try {
+                var supportedLibs = [window['Promise'], window['Q'], window['assure'], window['Promiz'], window['Y']];
+                for (var i in supportedLibs) {
+                    var lib = supportedLibs[i];
+                    if (!!lib && !!lib.defer) {
+                        return lib;
+                    }
                 }
             }
-        }
-        catch (e) {
+            catch (e) {
+            }
         }
         return undefined;
     };
