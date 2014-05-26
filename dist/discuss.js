@@ -83,18 +83,16 @@
      * Only supports libraries that abide by the Promises/A+ spec and implement deferred promises.
      */
     Discuss.prototype.detectPromise = function () {
-        if (!this.options.noPromises) {
-            try {
-                var supportedLibs = [window['Promise'], window['Q'], window['assure'], window['Promiz'], window['Y']];
-                for (var i in supportedLibs) {
-                    var lib = supportedLibs[i];
-                    if (!!lib && !!lib.defer) {
-                        return lib;
-                    }
+        try {
+            var supportedLibs = [window['Promise'], window['Q'], window['assure'], window['Promiz'], window['Y']];
+            for (var i in supportedLibs) {
+                var lib = supportedLibs[i];
+                if (!!lib && !!lib.defer) {
+                    return lib;
                 }
             }
-            catch (e) {
-            }
+        }
+        catch (e) {
         }
         return undefined;
     };
@@ -131,28 +129,12 @@
 
             var timer = setTimeout(function() {
                 xhr.abort();
-                if (reject && self.promiseLib) {
-                    reject({
-                        body: 'A network timeout has occurred',
-                        status: 0
-                    });
-                }
-                else if (reject) {
-                    reject('A network timeout has occurred', 0);
-                }
+                self.respond(reject, 'A network timeout has occurred', 0);
             }, self.options.timeout);
 
             xhr.onerror = function () {
                 clearTimeout(timer);
-                if (reject && self.promiseLib) {
-                    reject({
-                        body: 'A network-level exception has occurred',
-                        status: 0
-                    });
-                }
-                else if (reject) {
-                    reject('A network-level exception has occurred', 0);
-                }
+                self.respond(reject, 'A network-level exception has occurred', 0);
             };
             xhr.onreadystatechange = function () {
                 clearTimeout(timer);
@@ -160,15 +142,8 @@
                     var responseHeaders = Utilities.parseResponseHeaders(xhr.getAllResponseHeaders(), self.options.autoParse);
                     var responseBody = Utilities.parseResponseBody(xhr.responseText, responseHeaders, self.options.autoParse);
                     var callback = (xhr.status >= 100 && xhr.status < 300 || xhr.status === 304) ? resolve : reject;
-                    if (callback && xhr.status !== 0 && self.promiseLib) {
-                        callback({
-                            body: responseBody,
-                            status: xhr.status,
-                            headers: responseHeaders
-                        });
-                    }
-                    else if (callback && xhr.status !== 0) {
-                        callback(responseBody, xhr.status, responseHeaders);
+                    if (callback && xhr.status !== 0) {
+                        self.respond(callback, responseBody, xhr.status, responseHeaders);
                     }
                 }
             };
@@ -185,25 +160,30 @@
                 }
             }
             catch (error) {
-                if (reject && self.promiseLib) {
-                    reject({
-                        body: error,
-                        status: 0
-                    });
-                }
-                else if (reject) {
-                    reject(error, 0);
-                }
+                self.respond(reject, error, 0);
             }
         };
 
-        if (this.promiseLib) {
+        if (this.promiseLib && !this.options.noPromises) {
             var deferred = this.promiseLib.defer();
             routine(deferred.resolve, deferred.reject);
             return deferred.promise;
         }
         else {
             routine(request.onSuccess, request.onError);
+        }
+    };
+
+    Discuss.prototype.respond = function (callback, body, status, headers) {
+        if (this.promiseLib && !this.options.noPromises) {
+            callback({
+                body: body,
+                status: status,
+                headers: headers
+            });
+        }
+        else {
+            callback(body, status, headers);
         }
     };
 

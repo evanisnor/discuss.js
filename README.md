@@ -164,7 +164,7 @@ Header objects may be applied to a Discuss instance or during request building.
         "The-Answer": "42"
     });
 
-	// Chained syntax exampled -- no Promises used.
+	// Chained syntax example -- no Promises used.
     user.post("/coordinates")
         .header({
             "Format" : "GRS80"

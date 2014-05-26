@@ -28,6 +28,41 @@ describe('discuss.js', function () {
                 chai.assert(false);
                 done();
             });
+
+            
+        });
+
+        it ('should obey the noPromises flag for a basic GET', function (done) {
+            
+            var d = new Discuss('http://localhost:9000/user').configure({
+                cors: true,
+                noPromises: true
+            });
+            d.get().success(function(body, status, responseHeaders) {
+                chai.assert.equal(status, 200);
+                chai.assert('Content-Type' in responseHeaders);
+                chai.assert(responseHeaders['Content-Type'], 'application/json');
+                chai.assert.deepEqual(body, {
+                    '2345' : {
+                        'username': 'testuser1'
+                    },
+                    '2346' : {
+                        'username': 'testuser2'
+                    },
+                    '2347' : {
+                        'username': 'testuser3'
+                    },
+                    '2348' : {
+                        'username': 'testuser4'
+                    }
+                });
+                done();
+            }).error(function() {
+                chai.assert(false);
+                done();
+            }).send();
+
+            
         });
 
         it ('should perform a basic GET with a path ammendment', function (done) {
