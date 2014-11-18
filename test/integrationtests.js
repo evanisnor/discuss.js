@@ -44,6 +44,20 @@ describe('discuss.js', function () {
             }).send();
         });
 
+        it ('should perfom a synchronous GET', function (done) {
+            var d = new Discuss('http://localhost:9000/user').configure({ cors: true, async: false });
+            var userId = 2347;
+            d.get('/' + userId).success(function(body, status, responseHeaders) {
+                    chai.assert.equal(status, 200);
+                    chai.assert('Content-Type' in responseHeaders);
+                    chai.assert(responseHeaders['Content-Type'], 'application/json');
+                    chai.assert.deepEqual(body, { 'username': 'testuser3' });
+                    done();
+            }).error(function() {
+                chai.assert(false);
+            }).send();
+        });
+
         it ('should translate query parameter into a query string', function (done) {
             var d = new Discuss('http://localhost:9000/logs').configure({ cors: true });
             d.get().query({ 'from': 523, 'to': 'end' })
@@ -111,6 +125,23 @@ describe('discuss.js', function () {
             };
 
             var d = new Discuss('http://localhost:9000/highscore').configure({ cors: true });
+            d.post().body(postdata).success(function(body, status, responseHeaders) {
+                chai.assert.equal(status, 201);
+                chai.assert.deepEqual(body, postdata);
+                done();
+            }).error(function() {
+                chai.assert(false);
+                done();
+            }).send();
+        });
+
+        it ('should perform a synchronous POST', function (done) {
+            var postdata = {
+                username: 'testuser',
+                score: '4358194'
+            };
+
+            var d = new Discuss('http://localhost:9000/highscore').configure({ cors: true, async: false });
             d.post().body(postdata).success(function(body, status, responseHeaders) {
                 chai.assert.equal(status, 201);
                 chai.assert.deepEqual(body, postdata);

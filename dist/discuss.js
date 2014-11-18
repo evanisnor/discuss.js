@@ -30,7 +30,8 @@
             autoParse: true,  // Automatic parsing of response object to JSON if the content type is application/json
             timeout: 30000,
             cors: false,
-            corsWithCredentials: false
+            corsWithCredentials: false,
+            async: true
         };
         this.setupMethodHandlers();
     };
@@ -94,7 +95,7 @@
         }
 
         var xhr = Utilities.buildXHR(this.options.cors, this.options.corsWithCredentials);
-        xhr.open(request.method.name, url, true);
+        xhr.open(request.method.name, url, this.options.async);
 
         var headers = Utilities.buildHeaders(this.reqHeaders, request.reqHeaders, typeof request._body, this.options.charset);
         for (var header in headers) {
@@ -117,8 +118,8 @@
                 request.onError('A network-level exception has occurred', 0);
             }
         };
-        xhr.onreadystatechange = function () {
-            clearTimeout(timer);
+
+        var callback = function(_xhr, _request) {
             if (xhr.readyState === 4) {
                 var responseHeaders = Utilities.parseResponseHeaders(xhr.getAllResponseHeaders(), self.options.autoParse);
                 var responseBody = Utilities.parseResponseBody(xhr.responseText, responseHeaders, self.options.autoParse);
@@ -129,6 +130,13 @@
             }
         };
 
+        if (this.options.async) {
+            xhr.onreadystatechange = function () {
+                clearTimeout(timer);
+                callback(xhr, request);
+            };
+        }
+
         try {
             if (request._body && typeof request._body === 'object') {
                 xhr.send(JSON.stringify(request._body));
@@ -138,6 +146,11 @@
             }
             else {
                 xhr.send();
+            }
+
+            if (!this.options.async) {
+                clearTimeout(timer);
+                callback(xhr, request);
             }
         }
         catch (error) {
