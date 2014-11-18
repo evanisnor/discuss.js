@@ -68,7 +68,8 @@ Available parameters include:
 *      `autoParse`   (default: true)     - Automatically parse bodies and headers to and from Objects (JSON)
 *      `timeout`     (default: 30000)  - Request timeout in milliseconds
 *      `cors`        (default: false)    - Enable CORS support for older browsers
-*      `corsWithCredentials`     (default: false) - Enable CORS support with credentials
+*      `corsWithCredentials`     (default: false)    - Enable CORS support with credentials
+*      `async`     (default: true)    - Expect the success callback to be called asynchronously if true, synchronously if false
 
 Headers
 ---------------
