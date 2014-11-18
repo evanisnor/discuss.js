@@ -119,7 +119,7 @@
             }
         };
 
-        var callback = function(_xhr, _request) {
+        var onFinished = function(_xhr, _request) {
             if (xhr.readyState === 4) {
                 var responseHeaders = Utilities.parseResponseHeaders(xhr.getAllResponseHeaders(), self.options.autoParse);
                 var responseBody = Utilities.parseResponseBody(xhr.responseText, responseHeaders, self.options.autoParse);
@@ -133,7 +133,7 @@
         if (this.options.async) {
             xhr.onreadystatechange = function () {
                 clearTimeout(timer);
-                callback(xhr, request);
+                onFinished(xhr, request);
             };
         }
 
@@ -150,7 +150,7 @@
 
             if (!this.options.async) {
                 clearTimeout(timer);
-                callback(xhr, request);
+                onFinished(xhr, request);
             }
         }
         catch (error) {
